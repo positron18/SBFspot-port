@@ -44,6 +44,10 @@ class EthernetConnection:
             # Allow address reuse
             self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             
+            # On macOS/BSD, also set SO_REUSEPORT
+            if hasattr(socket, 'SO_REUSEPORT'):
+                self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+            
             # Bind to any address on the specified port
             self.sock.bind(('', self.port))
             

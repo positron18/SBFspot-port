@@ -55,6 +55,19 @@ python3 monitor.py
 
 ## Documentation
 
+### ⚠️ **CRITICAL**: Energy Flow Interpretation
+
+**[📖 ENERGY_FLOW.md](./ENERGY_FLOW.md)** - **Must-read guide for hybrid systems with battery**
+
+Key concept: In systems with battery storage, the inverter's AC output (PAC) is **NOT** the same as solar production!
+- **Solar Production** = DC Power from panels (PDC)
+- **Inverter Output** = AC Power (PAC) - may include battery discharge
+- Never confuse the two, especially at night when PDC=0 but PAC>0
+
+**[📋 Quick Reference](./README_DATA_INTERPRETATION.md)** - TL;DR version with examples
+
+### API Documentation
+
 See [`sbfspot_python/README.md`](sbfspot_python/README.md) for full API documentation.
 
 ## Important Notes
