@@ -1,0 +1,2 @@
+dd/MM/yyyy HH:mm:ss;DeviceName;DeviceType;Serial;Pac1;Pac2;Pac3;Iac1;Iac2;Iac3;Uac1;Uac2;Uac3;PacTot;EToday;ETotal;Frequency;OperatingTime;FeedInTime;Condition;SOC;Tempbatt;Ubatt;Ibatt;TotWOut;TotWIn
+05/02/2026 16:10:54;SN: 1916002668;SB 5000SE-10;1916002668;419,000;0,000;0,000;1,732;0,000;0,000;242,000;0,000;0,000;419,000;6,525;33178,091;50,000;37590,126;37081,480;Ok;100,000;0,000;164,530;0,000;143,000;0,000

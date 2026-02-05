@@ -184,11 +184,12 @@ class PacketBuilder:
         return self.get_packet()
     
     def build_data_request_packet(self, dst_susy_id: int, dst_serial: int,
-                                   command: int, first: int, last: int) -> bytes:
+                                   command: int, first: int, last: int,
+                                   ctrl: int = 0xA0) -> bytes:
         """Build data request packet."""
         self.next_packet_id()
         self.build_eth_header()
-        self.build_packet(0x09, 0xA0, 0, dst_susy_id, dst_serial)
+        self.build_packet(0x09, ctrl, 0, dst_susy_id, dst_serial)
         self.write_long(command)
         self.write_long(first)
         self.write_long(last)

@@ -129,6 +129,7 @@ COMMANDS = {
     'BatteryInfo': (0x51000200, 0x00491E00, 0x00495DFF),
     'InverterTemperature': (0x52000200, 0x00237700, 0x002377FF),
     'MeteringGridMsTotW': (0x51000200, 0x00463600, 0x004637FF),
+    'ArchiveDayData': (0x70000200, 0, 0),  # LRI are used for start/end time
 }
 
 # FCS (Frame Check Sequence) lookup table for Bluetooth checksum

@@ -219,6 +219,16 @@ def main():
     # Target subnet for inverter discovery
     TARGET_SUBNET = "192.168.192"
     
+    # Check for direct IP in arguments
+    target_ip = None
+    import sys
+    for arg in sys.argv[1:]:
+        if arg.startswith('--ip='):
+            target_ip = arg.split('=')[1]
+        elif not arg.startswith('--'):
+            # Allow positional IP for convenience
+            target_ip = arg
+
     # Create SBFspot instance
     spot = SBFspot(password="0000")
     
@@ -227,35 +237,31 @@ def main():
         spot.eth.connect()
         print("✓ Network initialized\n")
         
-        # Discovery
-        print(f"Searching for SMA inverters in {TARGET_SUBNET}.x subnet (3 sec timeout)...")
-        all_inverters = spot.discover(timeout=3.0)
+        if not target_ip:
+            # Discovery mode
+            print(f"Searching for SMA inverters in {TARGET_SUBNET}.x subnet (3 sec timeout)...")
+            all_inverters = spot.discover(timeout=3.0)
+            
+            # Filter by subnet
+            inverters = [inv for inv in all_inverters if inv.ip_address.startswith(TARGET_SUBNET + ".")]
+            
+            if not all_inverters:
+                print("\n❌ No inverters found on the network. Try specifying IP: python monitor.py 192.168.x.x")
+                return 1
+            elif not inverters:
+                print(f"\n❌ Found {len(all_inverters)} inverter(s) but none in {TARGET_SUBNET}.x subnet:")
+                for inv in all_inverters:
+                    print(f"  - {inv.ip_address}")
+                print(f"\nPlease specify IP directly: python monitor.py <IP_ADDRESS>\n")
+                return 1
+            
+            target_ip = inverters[0].ip_address
+            print(f"✓ Found {len(inverters)} inverter(s) in {TARGET_SUBNET}.x\n")
+        else:
+            print(f"Using direct IP: {target_ip}\n")
         
-        # Filter by subnet
-        inverters = [inv for inv in all_inverters if inv.ip_address.startswith(TARGET_SUBNET + ".")]
-        
-        if not all_inverters:
-            print("\n❌ No inverters found on the network.")
-            print("\nTroubleshooting:")
-            print("  • Make sure you're on the same network as the inverter")
-            print("  • Check if the inverter is powered on and awake")
-            print("  • Verify firewall settings (UDP port 9522)")
-            print("  • Try specifying IP directly: python monitor.py <IP_ADDRESS>\n")
-            return 1
-        elif not inverters:
-            print(f"\n❌ Found {len(all_inverters)} inverter(s) but none in {TARGET_SUBNET}.x subnet:")
-            for inv in all_inverters:
-                print(f"  - {inv.ip_address}")
-            print(f"\nPlease update TARGET_SUBNET in monitor.py to match your network.\n")
-            return 1
-        
-        print(f"✓ Found {len(inverters)} inverter(s) in {TARGET_SUBNET}.x:\n")
-        for i, inv in enumerate(inverters, 1):
-            print(f"  {i}. {inv.ip_address}")
-        
-        # Connect to first inverter
-        target_ip = inverters[0].ip_address
-        print(f"\nConnecting to {target_ip}...")
+        # Connect to inverter
+        print(f"Connecting to {target_ip}...")
         spot.connect(target_ip)
         print(f"✓ Connected (SUSyID: {spot.inverter.susy_id}, Serial: {spot.inverter.serial})")
         

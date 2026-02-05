@@ -31,6 +31,19 @@ class MPPTData:
 
 
 @dataclass
+class DayData:
+    """Historical data record for a specific point in time."""
+    datetime: Optional[datetime] = None
+    total_wh: int = 0  # Total energy produced since installation (Wh)
+    watt: float = 0.0  # Average power during the interval (W)
+    
+    @property
+    def energy_total_kwh(self) -> float:
+        """Total energy in kWh."""
+        return self.total_wh / 1000.0
+
+
+@dataclass
 class InverterData:
     """
     Data container for SMA inverter readings.
@@ -105,6 +118,10 @@ class InverterData:
     # Grid metering
     metering_grid_w_out: int = 0
     metering_grid_w_in: int = 0
+    
+    # Historical data
+    day_data: List[DayData] = field(default_factory=list)
+    has_day_data: bool = False
     
     # Timestamps
     inverter_datetime: Optional[datetime] = None

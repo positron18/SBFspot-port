@@ -11,7 +11,7 @@ from .constants import (
     COMMANDS, UG_USER, MAX_RETRY, LriDef, DataType, DeviceClass,
     ANY_SUSYID, ANY_SERIAL, NAN_S32, NAN_U32
 )
-from .models import InverterData, MPPTData
+from .models import InverterData, MPPTData, DayData
 from .protocol import (
     PacketBuilder, get_short, get_long, get_longlong,
     get_long_signed, is_nan, parse_packet_header, version_to_string
@@ -207,7 +207,7 @@ class SBFspot:
         self._connected = False
         logger.info("Connection closed")
     
-    def _request_data(self, command: int, first: int, last: int) -> Optional[bytes]:
+    def _request_data(self, command: int, first: int, last: int, ctrl: int = 0xA0) -> Optional[bytes]:
         """
         Send data request and receive response.
         
@@ -215,6 +215,7 @@ class SBFspot:
             command: Command code
             first: First LRI code
             last: Last LRI code
+            ctrl: Control byte (0xA0 for spot, 0xE0 for archive)
             
         Returns:
             Response packet data or None if failed
@@ -226,7 +227,8 @@ class SBFspot:
             packet = self.protocol.build_data_request_packet(
                 self.inverter.susy_id,
                 self.inverter.serial,
-                command, first, last
+                command, first, last,
+                ctrl=ctrl
             )
             
             self.eth.send(packet, self.ip_address)
@@ -482,6 +484,77 @@ class SBFspot:
         
         return self.inverter
     
+    def get_archive_day_data(self, date: Optional[datetime] = None) -> InverterData:
+        """
+        Get historical daily production records.
+        
+        Args:
+            date: The date to retrieve (defaults to today)
+            
+        Returns:
+            Updated InverterData with day_data populated
+        """
+        if date is None:
+            date = datetime.now()
+            
+        # Set start of day in UTC (SBFspot style)
+        start_of_day = datetime(date.year, date.month, date.day, 0, 0, 0)
+        start_ts = int(start_of_day.timestamp())
+        
+        # SBFspot uses start_ts - 600 and start_ts + 86100
+        # Use 0xE0 control byte for archive requests
+        cmd, _, _ = COMMANDS['ArchiveDayData']
+        data = self._request_data(cmd, start_ts - 600, start_ts + 86100, ctrl=0xE0)
+        
+        if data:
+            self._parse_archive_response(data)
+            
+        return self.inverter
+
+    def _parse_archive_response(self, data: bytes):
+        """Parse archive response and update historical data."""
+        # Archive data starts at the same offset as spot data
+        offset = 14 + 6 + 8 + 8 + 2 + 2 + 2 
+        payload_start = offset + 12
+        end = len(data) - 4
+        
+        prev_total_wh = 0
+        prev_ts = 0
+        
+        self.inverter.day_data = []
+        
+        # Record size for ArchiveDayData is strictly 12 bytes in Ethernet
+        record_size = 12
+        
+        pos = payload_start
+        while pos + record_size <= end:
+            ts = get_long(data, pos)
+            total_wh = get_longlong(data, pos + 4)
+            
+            if ts > 0 and not is_nan(total_wh, signed=False, bits=64):
+                dt = datetime.fromtimestamp(ts)
+                
+                # Calculate power (W) if possible
+                watt = 0.0
+                if prev_ts > 0 and ts > prev_ts:
+                    watt = (total_wh - prev_total_wh) * 3600.0 / (ts - prev_ts)
+                
+                self.inverter.day_data.append(DayData(
+                    datetime=dt,
+                    total_wh=total_wh,
+                    watt=watt
+                ))
+                
+                prev_total_wh = total_wh
+                prev_ts = ts
+                
+            pos += record_size
+            
+        if self.inverter.day_data:
+            self.inverter.has_day_data = True
+            
+        return self.inverter
+
     def get_energy_data(self) -> InverterData:
         """
         Get energy production (today, total).
@@ -583,6 +656,7 @@ class SBFspot:
         self.get_energy_data()
         self.get_temperature()
         self.get_battery_data()
+        self.get_archive_day_data()
         
         return self.inverter
     
