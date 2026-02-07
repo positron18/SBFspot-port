@@ -10,10 +10,13 @@ This script demonstrates how to:
 
 import sys
 import logging
+from pathlib import Path
 
 # Add parent directory to path if running directly
 if __name__ == "__main__":
-    sys.path.insert(0, '..')
+    project_root = Path(__file__).resolve().parents[1]
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
 
 from sbfspot_python import SBFspot, InverterData
 

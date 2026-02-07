@@ -7,9 +7,12 @@ Discovers and displays data from SMA inverters on the network.
 import sys
 import time
 from datetime import datetime
+from pathlib import Path
 
-# Adjust path for direct execution
-sys.path.insert(0, '/Users/Giove/Progetti/SBFspot port')
+# Make local package importable regardless of current working directory
+PROJECT_ROOT = Path(__file__).resolve().parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from sbfspot_python import SBFspot
 

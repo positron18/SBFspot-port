@@ -3,6 +3,7 @@ Main SBFspot class for SMA inverter communication.
 """
 
 import logging
+import struct
 import time
 from datetime import datetime
 from typing import List, Optional
@@ -280,8 +281,6 @@ class SBFspot:
     
     def _parse_records(self, data: bytes, start_offset: int, record_size: int):
         """Parse individual data records."""
-        import struct
-        
         pos = start_offset
         end = len(data) - 4  # Exclude trailer
         
